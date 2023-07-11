@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 
 class AddItems extends StatefulWidget {
@@ -26,8 +27,19 @@ class _AddItemsState extends State<AddItems> {
     }
   }
 
-  Future<void> saveItem() async{
 
+  Future<void> saveItem() async{
+ final String itemName=_itemNameController.text.trim();
+ final String itemPrice=_itemPriceController.text.trim();
+ final String itemDescription=_itemDescriptionController.text.trim();
+
+ if(itemName.isEmpty || itemDescription.isEmpty || itemPrice.isEmpty){
+
+Fluttertoast.showToast(msg: "All fields are Required");
+ }
+ else{
+
+ }
   }
 
   @override
@@ -67,6 +79,11 @@ class _AddItemsState extends State<AddItems> {
               ),
               const SizedBox(height: 10),
               TextFormField(
+                validator: (value) {
+                  if(value!.isEmpty||value==null){
+                    return "Name is required";
+                  }
+                },
                 controller: _itemNameController,
                 decoration: InputDecoration(
                     labelText: "Item Name",
