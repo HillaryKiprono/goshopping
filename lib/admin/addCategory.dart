@@ -1,7 +1,10 @@
 import 'dart:io';
 
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+
 
 class AddCategory extends StatefulWidget {
   const AddCategory({super.key});
@@ -14,6 +17,9 @@ class AddCategory extends StatefulWidget {
 class _AddCategoryState extends State<AddCategory> {
   XFile? selectedCategoryImage;
   final _categoryItemNameController = TextEditingController();
+  final _database=FirebaseDatabase.instance.ref();
+  final DatabaseReference database = FirebaseDatabase.instance.reference();
+
 
   Future<void> _pickCategoryImage() async{
     final imagePicker=ImagePicker();
@@ -26,6 +32,80 @@ class _AddCategoryState extends State<AddCategory> {
   }
 
   Future<void> saveCategoryItem() async{
+    final String catName=_categoryItemNameController.text.trim();
+    if(catName.isEmpty){
+      showDialog(
+          context: context,
+          builder: (BuildContext context){
+            return AlertDialog(
+              title: Text("Error"),
+              content: Text("Please fill in Category Name"),
+              actions: [
+                ElevatedButton(onPressed: (){Navigator.pop(context);}, child: Text("OK"))
+              ],
+            );
+          });
+    }
+    else if(selectedCategoryImage==null)
+      {
+        showDialog(context: context, builder: (BuildContext context){
+          return AlertDialog(
+            title: Text("Error"),
+            content: Text("Please Select a Category Image"),
+            actions: [
+              ElevatedButton(onPressed: (){Navigator.pop(context);}, child: Text("Ok"))
+            ],
+          );
+        });
+      }
+    else{
+      // Upload the image to Firebase Storage and get the download URL
+      final File imageFile = File(selectedCategoryImage!.path);
+      final String imagePath = "item_images/${DateTime.now().microsecondsSinceEpoch}.jpg";
+      final Reference storageReference = FirebaseStorage.instance.ref().child(imagePath);
+      final UploadTask uploadTask = storageReference.putFile(imageFile);
+      try{
+        await uploadTask.whenComplete(() async {
+          final String imageUrl=await  storageReference.getDownloadURL();
+          //save the Category item details to the realTime
+
+          final Map<String,dynamic> categoryData={
+            'name':catName,
+            'imageUrl':imageUrl,
+          };
+          database.child('categories').push().set(categoryData);
+          // Show success dialog or navigate to a different screen
+          showDialog(
+              context: context,
+              builder: (BuildContext context){
+                return AlertDialog(
+                  title: Text("Success"),
+                  content: Text("Category Saved Successfully"),
+                  actions: [
+                    ElevatedButton(onPressed: (){Navigator.pop(context);}, child: Text("OK"))
+                  ],
+                );
+              });
+        });
+      }
+      catch(e){
+        // Handle error if any occurs during image upload
+        showDialog(
+            context: context,
+            builder: (BuildContext context){
+              return AlertDialog(
+                title: Text("Error"),
+                content: Text("Failed to upload image. Please try again."),
+                actions: [
+                  ElevatedButton(onPressed: (){Navigator.pop(context);}, child: Text("OK"))
+                ],
+              );
+            });
+      }
+
+
+
+    }
 
   }
   @override
